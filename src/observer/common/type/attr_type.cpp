@@ -12,21 +12,11 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "common/type/attr_type.h"
 
-const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "vectors", "booleans"};
+const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "vectors", "booleans", "texts"};
 
 const char *attr_type_to_string(AttrType type)
 {
   if (type >= AttrType::UNDEFINED && type < AttrType::MAXTYPE) {
-    return ATTR_TYPE_NAME[static_cast<int>(type)];
-  }
-  switch (type) {
-    case AttrType::INTS:     return "INT";
-    case AttrType::CHARS:    return "CHAR";
-    case AttrType::FLOATS:   return "FLOAT";
-    case AttrType::VECTORS:  return "VECTOR";
-    case AttrType::TEXTS:    return "TEXT"; // 记得加上你新定义的 TEXTS
-    case AttrType::BOOLEANS: return "BOOLEAN";
-    default:
     return ATTR_TYPE_NAME[static_cast<int>(type)];
   }
   return "unknown";
@@ -36,7 +26,7 @@ AttrType attr_type_from_string(const char *s)
 {
   for (unsigned int i = 0; i < sizeof(ATTR_TYPE_NAME) / sizeof(ATTR_TYPE_NAME[0]); i++) {
     if (0 == strcasecmp(ATTR_TYPE_NAME[i], s)) {
-      return (AttrType)i;
+           return static_cast<AttrType>(i);
     }
   }
   return AttrType::UNDEFINED;
@@ -49,5 +39,5 @@ bool is_numerical_type(AttrType type)
 
 bool is_string_type(AttrType type)
 {
-  return (type == AttrType::CHARS);
+  return type == AttrType::CHARS || type == AttrType::TEXTS;
 }
