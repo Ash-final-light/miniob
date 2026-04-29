@@ -187,11 +187,22 @@ RC Db::drop_table(const char *table_name)
   }
 
   Table *table = iter->second;
+  const TableMeta &table_meta = table->table_meta();
 
   // 2. 从内存映射中移除
   opened_tables_.erase(iter);
 
   // 3. 获取文件路径
+  vector<string> index_paths;
+  const int      index_num = table_meta.index_num();
+  index_paths.reserve(index_num);
+  for (int i = 0; i < index_num; i++) {
+    const IndexMeta *index_meta = table_meta.index(i);
+    if (index_meta != nullptr) {
+      index_paths.emplace_back(table_index_file(path_.c_str(), table_name, index_meta->name()));
+    }
+  }
+
   string table_meta_path = table_meta_file(path_.c_str(), table_name);
   string table_data_path = table_data_file(path_.c_str(), table_name);
   string table_lob_path  = table_lob_file(path_.c_str(), table_name);
@@ -208,6 +219,11 @@ RC Db::drop_table(const char *table_name)
   }
   if (filesystem::exists(table_lob_path)) {
     filesystem::remove(table_lob_path);
+  }
+  for (const string &index_path : index_paths) {
+    if (filesystem::exists(index_path)) {
+      filesystem::remove(index_path);
+    }
   }
 
   return rc;
