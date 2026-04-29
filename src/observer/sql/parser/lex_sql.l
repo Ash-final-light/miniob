@@ -126,6 +126,7 @@ ANALYZE                                 RETURN_TOKEN(ANALYZE);
 FIELDS                                  RETURN_TOKEN(FIELDS);
 TERMINATED                              RETURN_TOKEN(TERMINATED);
 ENCLOSED                                RETURN_TOKEN(ENCLOSED);
+TEXT                                  RETURN_TOKEN(TEXT_T);
 {ID}                                    yylval->cstring=strdup(yytext); static_cast<std::vector<char*>*>(yyextra)->push_back(yylval->cstring); RETURN_TOKEN(ID);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);

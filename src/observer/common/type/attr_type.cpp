@@ -19,6 +19,16 @@ const char *attr_type_to_string(AttrType type)
   if (type >= AttrType::UNDEFINED && type < AttrType::MAXTYPE) {
     return ATTR_TYPE_NAME[static_cast<int>(type)];
   }
+  switch (type) {
+    case AttrType::INTS:     return "INT";
+    case AttrType::CHARS:    return "CHAR";
+    case AttrType::FLOATS:   return "FLOAT";
+    case AttrType::VECTORS:  return "VECTOR";
+    case AttrType::TEXTS:    return "TEXT"; // 记得加上你新定义的 TEXTS
+    case AttrType::BOOLEANS: return "BOOLEAN";
+    default:
+    return ATTR_TYPE_NAME[static_cast<int>(type)];
+  }
   return "unknown";
 }
 

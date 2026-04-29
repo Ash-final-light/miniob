@@ -89,6 +89,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         STRING_T
         FLOAT_T
         VECTOR_T
+        TEXT_T
         HELP
         EXIT
         DOT //QUOTE
@@ -370,7 +371,12 @@ attr_def:
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = 4;
+      // 手册逻辑：如果是 TEXT 类型，默认长度设为 4096
+      if ($2 == static_cast<int>(AttrType::TEXTS)) {
+          $$->length = 4096;
+      } else {
+          $$->length = 4; // 其他类型（如 INT）默认长度
+      }
     }
     ;
 number:
@@ -381,6 +387,7 @@ type:
     | STRING_T { $$ = static_cast<int>(AttrType::CHARS); }
     | FLOAT_T  { $$ = static_cast<int>(AttrType::FLOATS); }
     | VECTOR_T { $$ = static_cast<int>(AttrType::VECTORS); }
+    | TEXT_T   { $$ = static_cast<int>(AttrType::TEXTS); } // 匹配新 token
     ;
 primary_key:
     /* empty */
