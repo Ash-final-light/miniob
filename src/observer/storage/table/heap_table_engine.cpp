@@ -9,6 +9,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 #include "storage/table/heap_table_engine.h"
+#include <string.h>
 #include "storage/record/heap_record_scanner.h"
 #include "common/log/log.h"
 #include "storage/index/bplus_tree_index.h"
@@ -100,6 +101,50 @@ RC HeapTableEngine::delete_record(const Record &record)
            table_meta_->name(), index->index_meta().name(), record.rid().to_string().c_str(), strrc(rc));
   }
   rc = record_handler_->delete_record(&record.rid());
+  return rc;
+}
+
+RC HeapTableEngine::update_record_with_trx(const Record &old_record, const Record &new_record, Trx *trx)
+{
+  (void)trx;
+  RC rc = delete_entry_of_indexes(old_record.data(), old_record.rid(), true);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to delete old index entries while updating record. table=%s, rid=%s, rc=%s",
+        table_meta_->name(), old_record.rid().to_string().c_str(), strrc(rc));
+    return rc;
+  }
+
+  rc = insert_entry_of_indexes(new_record.data(), new_record.rid());
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to insert new index entries while updating record. table=%s, rid=%s, rc=%s",
+        table_meta_->name(), new_record.rid().to_string().c_str(), strrc(rc));
+    RC rollback_rc = insert_entry_of_indexes(old_record.data(), old_record.rid());
+    if (rollback_rc != RC::SUCCESS) {
+      LOG_ERROR("failed to rollback old index entries. table=%s, rid=%s, rc=%s",
+          table_meta_->name(), old_record.rid().to_string().c_str(), strrc(rollback_rc));
+    }
+    return rc;
+  }
+
+  rc = record_handler_->visit_record(old_record.rid(), [&new_record](Record &record) -> bool {
+    memcpy(record.data(), new_record.data(), new_record.len());
+    return true;
+  });
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to update record body. table=%s, rid=%s, rc=%s",
+        table_meta_->name(), old_record.rid().to_string().c_str(), strrc(rc));
+    RC rollback_rc = delete_entry_of_indexes(new_record.data(), new_record.rid(), false);
+    if (rollback_rc != RC::SUCCESS) {
+      LOG_ERROR("failed to rollback new index entries. table=%s, rid=%s, rc=%s",
+          table_meta_->name(), new_record.rid().to_string().c_str(), strrc(rollback_rc));
+    }
+    rollback_rc = insert_entry_of_indexes(old_record.data(), old_record.rid());
+    if (rollback_rc != RC::SUCCESS) {
+      LOG_ERROR("failed to restore old index entries. table=%s, rid=%s, rc=%s",
+          table_meta_->name(), old_record.rid().to_string().c_str(), strrc(rollback_rc));
+    }
+  }
+
   return rc;
 }
 
